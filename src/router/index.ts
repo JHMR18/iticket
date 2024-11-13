@@ -48,6 +48,11 @@ const routes = [
         path: 'vehicle-types',    
         name: 'vehicle-types',
         component: VehicleTypes,
+      },
+      {
+        path: 'manage-users',
+        name: 'manage-users',
+        component: () => import('@/components/admin/ManageUsers.vue'),
       }
     ]
   },

@@ -1,11 +1,5 @@
 <template>
-    <NavBarAdmin>  </NavBarAdmin>
-    <div>
-        <h1>Admin Page</h1>
-    </div>
-    <v-main>
-    <router-view />
-  </v-main>
+    <NavBarAdmin>  </NavBarAdmin>           
 </template>
 <script setup>
 import axios from 'axios';

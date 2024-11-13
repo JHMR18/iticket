@@ -3,9 +3,7 @@
   <NabBar /> 
 
   <!-- Router View to dynamically load content for nested pages -->
-  <v-main>
-    <router-view />
-  </v-main>
+
 </template>
 <script setup>
 import axios from 'axios';
