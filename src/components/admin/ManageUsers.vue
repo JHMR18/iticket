@@ -2,14 +2,19 @@
     <div>
         <v-row class="mb-4" style="padding-top: 20px; padding-left: 20px;">
             <v-col cols="12">
-                <h1>Enforcer Accounts</h1>
-                <v-btn color="primary" @click="openAddUserModal">Add Enforcer</v-btn>
+                <v-text-field
+                    v-model="searchQuery"
+                    label="Search by First Name or Last Name"
+                    width="500px"
+                    clearable
+                    @input="filterEnforcers"
+                ></v-text-field>
             </v-col>
         </v-row>
 
         <v-data-table
             :headers="headers"
-            :items="enforcersWithMappedRoles"
+            :items="filteredEnforcers"
             item-key="id"
             class="elevation-1"
         >
@@ -18,18 +23,19 @@
                 <v-btn color="error" @click="openDeleteConfirmation(item.id)" small>Delete</v-btn>
             </template>
         </v-data-table>
+        <v-btn color="primary" @click="openAddUserModal">Add Enforcer</v-btn>
 
         <!-- Add User Modal -->
         <v-dialog v-model="isAddUserModalOpen" max-width="600px">
             <v-card>
                 <v-card-title>Add Enforcer</v-card-title>
                 <v-card-text>
-                    <v-form ref="addUser Form">
-                        <v-text-field v-model="newUser .first_name" label="First Name" required></v-text-field>
-                        <v-text-field v-model="newUser .last_name" label="Last Name" required></v-text-field>
-                        <v-text-field v-model="newUser .email" label="Email" required></v-text-field>
+                    <v-form ref="addUserForm">
+                        <v-text-field v-model="newUser.first_name" label="First Name" required></v-text-field>
+                        <v-text-field v-model="newUser.last_name" label="Last Name" required></v-text-field>
+                        <v-text-field v-model="newUser.email" label="Email" required></v-text-field>
                         <v-select
-                            v-model="newUser .role"
+                            v-model="newUser.role"
                             :items="availableRoles"
                             item-title="name"
                             item-value="id"
@@ -37,7 +43,7 @@
                             required
                         ></v-select>
                         <v-text-field
-                            v-model="newUser .password"
+                            v-model="newUser.password"
                             label="Password"
                             type="password"
                             required
@@ -47,7 +53,7 @@
                 <v-card-actions>
                     <v-spacer></v-spacer>
                     <v-btn color="grey" @click="closeAddUserModal">Cancel</v-btn>
-                    <v-btn color="primary" @click="addUser ">Add</v-btn>
+                    <v-btn color="primary" @click="addUser">Add</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -119,18 +125,17 @@ const isDeleteConfirmationOpen = ref(false);
 const isAddUserModalOpen = ref(false);
 const selectedEnforcer = ref({});
 const enforcerToDelete = ref(null);
-const newUser  = ref({ first_name: '', last_name: '', email: '', role: '', password: '' });
+const newUser = ref({ first_name: '', last_name: '', email: '', role: '', password: '' });
 const newPassword = ref('');
 const confirmPassword = ref('');
+const searchQuery = ref('');
 
 const ENFORCER_ROLE_ID = 'bfc39d2e-772b-44e7-95a2-124670bc47a1';
 
-// Role ID to name mapping
 const roleMapping = {
     [ENFORCER_ROLE_ID]: 'enforcer'
 };
 
-// Define axios instance with default headers
 const api = axios.create({
     baseURL: 'http://localhost:8055',
     headers: {
@@ -147,7 +152,6 @@ const headers = [
     { title: 'Actions', value: 'actions', sortable: false },
 ];
 
-// Password validation
 const passwordError = computed(() => {
     if (!newPassword.value && !confirmPassword.value) return '';
     if (newPassword.value && !confirmPassword.value) return 'Please confirm the password';
@@ -156,17 +160,19 @@ const passwordError = computed(() => {
     return '';
 });
 
-// Computed property to filter enforcers and map role IDs to names
-const enforcersWithMappedRoles = computed(() => {
+const filteredEnforcers = computed(() => {
     return enforcers.value
         .filter(enforcer => enforcer.role === ENFORCER_ROLE_ID)
+        .filter(enforcer => {
+            const fullName = `${enforcer.first_name} ${enforcer.last_name}`.toLowerCase();
+            return fullName.includes(searchQuery.value.toLowerCase());
+        })
         .map(enforcer => ({
             ...enforcer,
             displayRole: roleMapping[enforcer.role] || enforcer.role
         }));
 });
 
-// Available roles for the select dropdown
 const availableRoles = [
     { id: ENFORCER_ROLE_ID, name: 'enforcer' }
 ];
@@ -216,7 +222,6 @@ const saveEnforcer = async () => {
             role: selectedEnforcer.value.role
         };
 
-        // Only include password in update if a new one was provided
         if (newPassword.value) {
             updateData.password = newPassword.value;
         }
@@ -250,29 +255,34 @@ const confirmDelete = async () => {
 };
 
 const openAddUserModal = () => {
-    newUser .value = { first_name: '', last_name: '', email: '', role: ENFORCER_ROLE_ID, password: '' };
     isAddUserModalOpen.value = true;
 };
 
 const closeAddUserModal = () => {
     isAddUserModalOpen.value = false;
-    newUser .value = { first_name: '', last_name: '', email: '', role: '', password: '' };
+    newUser.value = { first_name: '', last_name: '', email: '', role: '', password: '' };
 };
 
-const addUser  = async () => {
+const addUser = async () => {
     try {
-        await api.post('/users', newUser .value);
+        const { first_name, last_name, email, role, password } = newUser.value;
+        await api.post("/users", {
+            first_name,
+            last_name,
+            email,
+            role,
+            password
+        });
         await fetchEnforcers();
         closeAddUserModal();
     } catch (error) {
-        console.error("Error adding enforcer:", error.response?.data || error);
+        console.error("Error adding user:", error.response?.data || error);
     }
 };
 </script>
 
-<style>
-.v-data-table thead th {
-    background-color: #0F3C45 !important;
-    color: white;
+<style scoped>
+.mb-4 {
+    margin-bottom: 1.5rem;
 }
 </style>

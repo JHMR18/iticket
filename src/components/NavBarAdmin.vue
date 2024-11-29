@@ -1,7 +1,7 @@
 <template>
     <v-app>
     <!-- Sidebar -->
-    <v-navigation-drawer app color="#0F3C45" dark permanent>
+    <v-navigation-drawer app color="#0F3C45" dark permanent style="position: fixed;">
         <!-- Sidebar Title -->
         <v-list-item>
         <v-list-item-avatar>
@@ -15,26 +15,37 @@
         <!-- Navigation Options -->
         <v-divider></v-divider>
         <v-list>
-        <v-list-item to="/admin/processed-tickets" link>
-            <v-list-item-title><v-icon style="margin-right: 10px;">mdi-ticket-confirmation</v-icon>Processed Tickets</v-list-item-title>
-        </v-list-item>
-        <!-- <v-list-item to="/admin/impounded-vehicles" link>
-            <v-list-item-title><v-icon style="margin-right: 10px;">mdi-car</v-icon>Impounded Vehicles</v-list-item-title>
-        </v-list-item> -->
-        <!-- <v-list-item to="/admin/violators" link>
-            <v-list-item-title><v-icon style="margin-right: 10px;">mdi-account-multiple</v-icon>Violators</v-list-item-title>
-        </v-list-item> -->
-        <v-list-item to="/admin/violations" link>
-            <v-list-item-title><v-icon style="margin-right: 10px;">mdi-alert-circle</v-icon>Violations</v-list-item-title>
-        </v-list-item>
-        <v-list-item to="/admin/vehicle-types" link>
-            <v-list-item-title><v-icon style="margin-right: 10px;">mdi-car-search-outline</v-icon>Vehicle Types</v-list-item-title>
-        </v-list-item>
-        <v-list-item to="/admin/manage-users" link>
-            <v-list-item-title><v-icon style="margin-right: 10px;">mdi-account-multiple-check</v-icon>Manage Users</v-list-item-title>
-        </v-list-item>
+            <v-list-item to="/admin/processed-tickets" link>
+                <v-list-item-title><v-icon style="margin-right: 10px;">mdi-ticket-confirmation</v-icon>Processed Tickets</v-list-item-title>
+            </v-list-item>
+            <v-list-group>
+                <template v-slot:activator="{ props }">
+                    <v-list-item v-bind="props">
+                        <v-list-item-title>
+                            <v-icon style="margin-right: 10px;">mdi-poll</v-icon>Data Reports
+                        </v-list-item-title>
+                    </v-list-item>
+                </template>
+                <v-list-item to="/admin/data-reports/violation-report" link>
+                    <v-list-item-title><v-icon style="margin-right: 10px;">mdi-file-document-alert</v-icon>Violation Report</v-list-item-title>
+                </v-list-item>
+                <v-list-item to="/admin/data-reports/officer-performance" link>
+                    <v-list-item-title><v-icon style="margin-right: 10px;">mdi-police-badge</v-icon>Officer Performance Report</v-list-item-title>
+                </v-list-item>
+                <v-list-item to="/admin/data-reports/monthly-collection" link>
+                    <v-list-item-title><v-icon style="margin-right: 10px;">mdi-cash-multiple</v-icon>Monthly Collection Report</v-list-item-title>
+                </v-list-item>
+            </v-list-group>
+            <v-list-item to="/admin/violations" link>
+                <v-list-item-title><v-icon style="margin-right: 10px;">mdi-alert-circle</v-icon>Violations</v-list-item-title>
+            </v-list-item>
+            <v-list-item to="/admin/vehicle-types" link>
+                <v-list-item-title><v-icon style="margin-right: 10px;">mdi-car-search-outline</v-icon>Vehicle Types</v-list-item-title>
+            </v-list-item>
+            <v-list-item to="/admin/manage-users" link>
+                <v-list-item-title><v-icon style="margin-right: 10px;">mdi-account-multiple-check</v-icon>Manage Users</v-list-item-title>
+            </v-list-item>
         </v-list>
-
         <!-- Spacer -->
         <v-spacer></v-spacer>
 
@@ -45,7 +56,7 @@
     </v-navigation-drawer>
 
     <!-- Top App Bar (only logo and user info now) -->
-    <v-app-bar color="#0F3C45" dark app>
+    <v-app-bar color="#0F3C45" dark app style="position: fixed;">
         <v-spacer></v-spacer>
 
         <!-- Right Side: User Info and Avatar -->

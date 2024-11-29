@@ -53,6 +53,27 @@ const routes = [
         path: 'manage-users',
         name: 'manage-users',
         component: () => import('@/components/admin/ManageUsers.vue'),
+      },
+      {
+      path:'data-reports',
+      name:'data-reports',
+      children: [
+        {
+          path: 'violation-report',
+          name: 'violation-report',
+          component: () => import('@/components/Reports/ViolationReport.vue'),
+        },
+        {
+          path: 'officer-performance',
+          name: 'officer-performance',
+          component: () => import('@/components/Reports/OfficerPerformance.vue'),
+        },
+        {
+          path:'monthly-collection',
+          name:'monthly-collection',
+          component: () => import('@/components/Reports/MonthlyCollection.vue'),
+        }
+      ]
       }
     ]
   },

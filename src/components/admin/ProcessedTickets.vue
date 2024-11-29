@@ -1,226 +1,351 @@
 <template>
-    <div>
-        <!-- Search and Filter -->
-        <v-row class="mb-4" style="padding-top: 20px; padding-left: 20px;">
-            <v-col cols="6" sm="4">
-                <v-text-field
-                    v-model="searchQuery"
-                    label="Search by Violator's Name"
-                    clearable
-                    variant="outlined"
-                ></v-text-field>
+    <v-container fluid>
+    <v-row>
+        <!-- Left Column: Analytics and Table -->
+        <v-col cols="12" md="12">
+
+        <!-- Charts -->
+        <v-row dense>
+            <v-col cols="12" sm="6">
+            <pie-chart></pie-chart>
             </v-col>
-            <v-col cols="6" sm="4">
-                <v-menu v-model="showStatusMenu" :close-on-content-click="false">
-                    <template v-slot:activator="{ props }">
-                        <v-btn
-                            v-bind="props"
-                            color="#0F3C45"
-                            class="filter-btn"
-                            style="margin-right: 15px; height: 50px;"
-                            :prepend-icon="statusFilter ? '' : 'mdi-menu-down'"
-                        >
-                            Status: {{ statusFilter || 'Select Status' }}
-                        </v-btn>
-                    </template>
-                    <v-list>
-                        <v-list-item
-                            v-for="status in statusOptions"
-                            :key="status"
-                            @click="setStatusFilter(status)"
-                        >
-                            <v-list-item-title>{{ status }}</v-list-item-title>
-                        </v-list-item>
-                        <v-list-item @click="clearStatusFilter">
-                            <v-list-item-title>
-                                <v-icon start>mdi-close</v-icon>Clear Filter
-                            </v-list-item-title>
-                        </v-list-item>
-                    </v-list>
-                </v-menu>
+            <v-col cols="12" sm="6">
+            <ticket-line-chart></ticket-line-chart>
             </v-col>
         </v-row>
-
+        <!-- Compact Filters -->
+        <v-row dense class="mb-4">
+            <v-col cols="12" sm="3">
+            <v-text-field 
+                v-model="searchQuery" 
+                label="Search Violator's Name" 
+                prepend-inner-icon="mdi-magnify" 
+                variant="outlined" 
+                dense
+                hide-details
+                clearable
+            ></v-text-field>
+            </v-col>
+            <v-col cols="12" sm="9">
+            <v-row dense>
+                <v-col>
+                <v-select 
+                    v-model="statusFilter" 
+                    :items="statusOptions" 
+                    label="Ticket Status" 
+                    variant="outlined" 
+                    dense
+                    clearable
+                ></v-select>
+                </v-col>
+                <v-col>
+                <v-select 
+                    v-model="selectedYear" 
+                    :items="years" 
+                    label="Year" 
+                    variant="outlined" 
+                    dense
+                    clearable
+                ></v-select>
+                </v-col>
+                <v-col>
+                <v-select 
+                    v-model="selectedMonth" 
+                    :items="months" 
+                    item-title="title" 
+                    item-value="value"
+                    label="Month" 
+                    variant="outlined" 
+                    dense
+                    clearable
+                ></v-select>
+                </v-col>
+            </v-row>
+            </v-col>
+        </v-row>
+        <!-- Data Table -->
         <v-data-table
             :headers="headers"
             :items="filteredTickets"
-            item-key="ticket_id"
-            class="elevation-1"
+            density="compact"
+            class="elevation-1 mt-4"
         >
-            <template v-slot:[`item.actions`]="{ item }">
-                <v-btn color="primary" @click="openEditModal(item)" small>Details</v-btn>
-                <v-btn color="error" @click="openDeleteConfirmation(item.ticket_id)" small>Delete</v-btn>
+            <template v-slot:item.actions="{ item }">
+            <v-btn icon @click="openEditModal(item)" size="small">
+                <v-icon>mdi-eye</v-icon>
+            </v-btn>
+            <v-btn icon color="error" @click="openDeleteConfirmation(item.ticket_id)" size="small">
+                <v-icon>mdi-delete</v-icon>
+            </v-btn>
             </template>
         </v-data-table>
+        </v-col>
+    </v-row>
 
-        <!-- Add/Edit Modal -->
-        <v-dialog v-model="isModalOpen" max-width="1200px">
-            <v-card>
-                <v-card-title class="title" style="background-color: #0F3C45; color: white;">
-                    <span>{{ isEditing ? 'Ticket' : 'Add Ticket' }}</span>
-                </v-card-title>
+    <!-- Add/Edit Modal -->
+    <v-dialog v-model="isModalOpen" max-width="1200px">
+    <v-card class="pa-4">
+      <v-card-title class="d-flex align-center justify-space-between pa-0 mb-4" style="background-color: transparent;">
+        <div class="d-flex align-center">
+          <v-chip 
+            class="mr-4" 
+            color="#0F3C45" 
+            text-color="white" 
+            label
+          >
+            Ticket ID: {{ formData.ticket_id }}
+          </v-chip>
+          
+          <div class="d-flex flex-column">
+            <span style="font-weight: bold; color:#0F3C45 ;" class="subtitle-2 grey--text">Citation Officer</span>
+            <div class="d-flex align-center">
+              <v-icon class="mr-2" color="grey">mdi-account-badge</v-icon>
+              <span style="font-weight: 600; color:#0F3C45 ;">
+                {{ formData.user_created.first_name }} 
+                {{ formData.user_created.last_name }}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <v-chip 
+          :color="getStatusColor(formData.status)"
+          label
+          class="status-chip"
+        >
+          <v-select
+            v-model="formData.status"
+            :items="['not paid', 'paid',]"
+            dense
+            solo
+            flat
+            hide-details
+            class="status-select"
+          ></v-select>
+        </v-chip>
+      </v-card-title>
 
-                <v-card-text>
-                    <v-row>
-                        <v-col :cols="formData.impounded_vehicle_id && Object.keys(formData.impounded_vehicle_id).length > 0 ? 6 : 12">
-                            <v-form ref="form">
-                                <!-- Ticket Details Section -->
-                                <v-divider></v-divider>
-                                <h3 class="section-title">Ticket Details</h3>
-                                <v-row>
-                                    <v-col cols="6">
-                                        <v-text-field v-model="formData.ticket_id" label="Ticket ID" required></v-text-field>
-                                    </v-col>
-                                    <v-col cols="6">
-                                        <v-text-field v-model="formData.date_time" label="Date and Time" required></v-text-field>
-                                    </v-col>
-                                    <v-col cols="6">
-                                        <v-select
-                                            v-model="formData.status"
-                                            :items="['issued', 'paid', 'impounded', 'released', 'canceled']"
-                                            label="Status"
-                                            required
-                                        ></v-select>
-                                    </v-col>
-                                    <v-col cols="6">
-                                        <v-text-field v-model="formData.violator_id.issued_at" label="Issued At" required></v-text-field>
-                                    </v-col>
-                                </v-row>
-
-                                <!-- Violator Details Section -->
-                                <v-divider class="my-3"></v-divider>
-                                <h3 class="section-title">Violator Details</h3>
-                                <v-row>
-                                    <v-col cols="6">
-                                        <v-text-field v-model="formData.violator_id.first_name" label="First Name" required></v-text-field>
-                                    </v-col>
-                                    <v-col cols="6">
- <v-text-field v-model="formData.violator_id.middle_name" label="Middle Name"></v-text-field>
-                                    </v-col>
-                                    <v-col cols="6">
-                                        <v-text-field v-model="formData.violator_id.last_name" label="Last Name" required></v-text-field>
-                                    </v-col>
-                                    <v-col cols="6">
-                                        <v-text-field v-model="formData.violator_id.address" label="Address" required></v-text-field>
-                                    </v-col>
-                                    <v-col cols="6">
-                                        <v-text-field v-model="formData.violator_id.birth_date" label="Birth Date" required></v-text-field>
-                                    </v-col>
-                                    <v-col cols="6">
-                                        <v-text-field v-model="formData.violator_id.license_no" label="License No." required></v-text-field>
-                                    </v-col>
-                                </v-row>
-
-                                <!-- Enforcer Details Section -->
-                                <v-divider class="my-3"></v-divider>
-                                <h3 class="section-title">Citation Officer</h3>
-                                <v-row>
-                                    <v-col cols="6">
-                                        <v-text-field v-model="formData.user_created.first_name" label="First Name" required></v-text-field>
-                                    </v-col>
-                                    <v-col cols="6">
-                                        <v-text-field v-model="formData.user_created.last_name" label="Last Name" required></v-text-field>
-                                    </v-col>
-                                </v-row>
-
-                                <!-- Violation and Status Section -->
-                                <v-divider class="my-3"></v-divider>
-                                <h3 class="section-title">Violation & Fee</h3>
-                                <v-row>
-                                    <v-col cols="12">
-                                        <div class="violations-container">
-                                            <v-chip
-                                                v-for="(violation, index) in formData.violations.split(', ')"
-                                                :key="index"
-                                                class="ma-1"
-                                                color="#0F3C45"
-                                                text-color="white"
-                                                small
-                                            >
-                                                {{ violation }}
-                                            </v-chip>
-                                        </div>
-                                    </v-col>
-                                    <v-col cols="6">
-                                        <v-text-field 
-                                            v-model="formData.total_penalty_fee" 
-                                            label="Total Penalty Fee" 
-                                            readonly
-                                            required
-                                        ></v-text-field>
-                                    </v-col>
-                                    <v-col cols="6">
-                                    <v-text-field 
-                                        v-model="formData.offense_count" 
-                                        label="Number of Offenses" 
-                                        readonly
-                                    ></v-text-field>
-                                </v-col>
-                                </v-row>
-                            </v-form>
-                        </v-col>
-
-                        <!-- Impounded Vehicle Information -->
-                        <v-col cols="6" v-if="formData.impounded_vehicle_id && Object.keys(formData.impounded_vehicle_id).length > 0">
-                            <v-divider class="my-3"></v-divider>
-                            <h3 class="section-title">Impounded Vehicle Information</h3>
-                            <v-row>
-                                <v-col cols="6">
-                                    <v-text-field v-model="formData.impounded_vehicle_id.apprehending_officer" label="Apprehending Officer" readonly></v-text-field>
-                                </v-col>
-                                <v-col cols="6">
-                                    <v-text-field v-model="formData.impounded_vehicle_id.date_time" label="Date/Time" readonly></v-text-field>
-                                </v-col>
-                                <v-col cols="6">
-                                    <v-text-field v-model="formData.impounded_vehicle_id.owner_address" label="Owner Address" readonly></v-text-field>
-                                </v-col>
-                                <v-col cols="6">
-                                    <v-text-field v-model="formData.impounded_vehicle_id.owner_name" label="Owner Name" readonly></v-text-field>
-                                </v-col>
-                                <v-col cols="6">
-                                    <v-text-field v-model="formData.impounded_vehicle_id.place" label="Place" readonly></v-text-field>
-                                </v-col>
-                                <v-col cols="6">
-                                    <v-text-field v-model="formData.impounded_vehicle_id.plate_no" label="Plate No" readonly></v-text-field>
-                                </v-col>
-                                <v-col cols="6">
-                                    <v-text-field v-model="formData.impounded_vehicle_id.registration_no" label="Registration No" readonly></v-text-field>
-                                </v-col>
-                                <v-col cols="6">
-                                    <v-text-field v-model="formData.impounded_vehicle_id.vehicle_utility" label="Vehicle Utility" readonly></v-text-field>
-                                </v-col>
-                            </v-row>
-                        </v-col>
-                    </v-row>
-                </v-card-text>
-
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn color="grey" @click="closeModal">Cancel</v-btn>
-                    <v-btn style="color: #0F3C45;" @click="saveTicket">{{ isEditing ? 'Save Changes' : 'Add Ticket' }}</v-btn>
-                </v-card-actions>
+      <v-card-text class="pt-0">
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-card outlined class="mb-4">
+              <v-card-title class="subtitle-2 grey--text text--darken-2">
+                Violator Details
+              </v-card-title>
+              <v-card-text>
+                <v-row dense>
+                  <v-col cols="4">
+                    <v-text-field 
+                      v-model="formData.violator_id.first_name"
+                      label="First Name" 
+                      readonly 
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="4">
+                    <v-text-field 
+                      v-model="formData.violator_id.middle_name"
+                      label="Middle Name" 
+                      readonly 
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="4">
+                    <v-text-field 
+                      v-model="formData.violator_id.last_name"
+                      label="Last Name" 
+                      readonly 
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="6">
+                    <v-text-field 
+                      v-model="formData.violator_id.license_no"
+                      label="License No." 
+                      readonly 
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="6">
+                    <v-text-field 
+                      v-model="formData.violator_id.birth_date"
+                      label="Birth Date" 
+                      readonly 
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-text-field 
+                      v-model="formData.violator_id.address"
+                      label="Address" 
+                      readonly 
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-card-text>
             </v-card>
-        </v-dialog>
+          </v-col>
 
-        <!-- Delete Confirmation Modal -->
-        <v-dialog v-model="isDeleteConfirmationOpen" max-width="400px">
-            <v-card>
-                <v-card-title class="text-h6">Confirm Deletion</v-card-title>
-                <v-card-text>Are you sure you want to delete this ticket?</v-card-text>
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn color="grey" @click="closeDeleteConfirmation">Cancel</v-btn>
-                    <v-btn color="error" @click="confirmDelete">Delete</v-btn>
-                </v-card-actions>
+          <v-col cols="12" md="6">
+            <v-card outlined class="mb-4">
+              <v-card-title class="subtitle-2 grey--text text--darken-2">
+                Violation & Fee
+              </v-card-title>
+              <v-card-text>
+                <div class="violations-container mb-3">
+                  <v-chip
+                    v-for="(violation, index) in formData.violations.split(', ')"
+                    :key="index"
+                    class="ma-1"
+                    color="#0F3C45"
+                    text-color="white"
+                    small
+                  >
+                    {{ violation }}
+                  </v-chip>
+                </div>
+                <v-row dense>
+                  <v-col cols="6">
+                    <v-text-field 
+                      v-model="formData.total_penalty_fee" 
+                      label="Total Penalty Fee" 
+                      readonly 
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="6">
+                    <v-text-field 
+                      v-model="formData.offense_count" 
+                      label="Number of Offenses" 
+                      readonly 
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-text-field 
+                      v-model="formData.date_time" 
+                      label="Ticket Issued Date/Time" 
+                      readonly 
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-card-text>
             </v-card>
-        </v-dialog>
-    </div>
+          </v-col>
+
+          <!-- Impounded Vehicle Section (if applicable) -->
+          <v-col 
+            v-if="formData.impounded_vehicle_id && Object.keys(formData.impounded_vehicle_id).length > 0" 
+            cols="12"
+          >
+            <v-card outlined>
+              <v-card-title class="subtitle-2 grey--text text--darken-2">
+                Impounded Vehicle Information
+              </v-card-title>
+              <v-card-text>
+                <v-row dense>
+                  <v-col cols="6" md="3">
+                    <v-text-field 
+                      v-model="formData.impounded_vehicle_id.plate_no"
+                      label="Plate No" 
+                      readonly 
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="6" md="3">
+                    <v-text-field 
+                      v-model="formData.impounded_vehicle_id.registration_no"
+                      label="Registration No" 
+                      readonly 
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="6" md="3">
+                    <v-text-field 
+                      v-model="formData.impounded_vehicle_id.owner_name"
+                      label="Owner Name" 
+                      readonly 
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="6" md="3">
+                    <v-text-field 
+                      v-model="formData.impounded_vehicle_id.vehicle_utility"
+                      label="Vehicle Utility" 
+                      readonly 
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="6" md="3">
+                    <v-text-field 
+                      v-model="formData.impounded_vehicle_id.owner_address"
+                      label="Owner Address" 
+                      readonly 
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="6" md="3">
+                    <v-text-field 
+                      v-model="formData.impounded_vehicle_id.date_time"
+                      label="Impound Date/Time" 
+                      readonly 
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="6" md="3">
+                    <v-text-field 
+                      v-model="formData.impounded_vehicle_id.place"
+                      label="Impound Place" 
+                      readonly 
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="6" md="3">
+                    <v-text-field 
+                      v-model="formData.impounded_vehicle_id.apprehending_officer"
+                      label="Apprehending Officer" 
+                      readonly 
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+      </v-card-text>
+
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn color="grey" @click="closeModal">Cancel</v-btn>
+        <v-btn style="color: #0F3C45;" @click="saveTicket">
+          {{ isEditing ? 'Save Changes' : 'Add Ticket' }}
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+    <!-- Delete Confirmation Modal -->
+    <v-dialog v-model="isDeleteConfirmationOpen" max-width="400px">
+        <v-card>
+        <v-card-title class="text-h6">Confirm Deletion</v-card-title>
+        <v-card-text>Are you sure you want to delete this ticket?</v-card-text>
+        <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="grey" @click="closeDeleteConfirmation">Cancel</v-btn>
+            <v-btn color="error" @click="confirmDelete">Delete</v-btn>
+        </v-card-actions>
+        </v-card>
+    </v-dialog>
+    </v-container>
 </template>
-
 <script setup>
 import axios from "axios";
 import { ref, reactive, computed, onMounted } from "vue";
-
+import PieChart from "./charts/PieChart.vue";
+import TicketLineChart from "./charts/TicketLineChart.vue";
 const token = localStorage.getItem("auth-token");
 const tickets = ref([]);
 const isModalOpen = ref(false);
@@ -229,7 +354,42 @@ const isDeleteConfirmationOpen = ref(false);
 const ticketToDelete = ref(null);
 const searchQuery = ref(""); // For searching violator's name
 const statusFilter = ref(""); // For filtering by status
-const statusOptions = ["issued", "paid", "impounded", "released", "canceled"]; // Status options
+const statusOptions = ["not paid", "paid"]; // Status options
+const selectedYear = ref(null);
+const selectedMonth = ref(null);
+
+
+// Generate years for the select options (e.g., from 2020 to the current year)
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: currentYear - 2019 }, (_, i) => currentYear - i);
+
+// Define month options
+const months = [
+    { title: 'January', value: 0 },
+    { title: 'February', value: 1 },
+    { title: 'March', value: 2 },
+    { title: 'April', value: 3 },
+    { title: 'May', value: 4 },
+    { title: 'June', value: 5 },
+    { title: 'July', value: 6 },
+    { title: 'August', value: 7 },
+    { title: 'September', value: 8 },
+    { title: 'October', value: 9 },
+    { title: 'November', value: 10 },
+    { title: 'December', value: 11 },
+];
+const getStatusColor = (status) => {
+    const statusColors = {
+    'issued': '#FF9800',      // Orange
+    'paid': 'green', 
+    'not paid': 'orange',       // Green
+    'impounded': '#F44336',   // Red
+    'released': '#2196F3',    // Blue
+    'canceled': '#9C27B0'     // Purple
+  }
+  return statusColors[status] || '#607D8B'
+    
+}
 const formData = reactive({
     ticket_id: null,
     status: '',
@@ -253,7 +413,28 @@ const formData = reactive({
     },
     impounded_vehicle_id: {}
 });
+const showYearMenu = ref(false );
+const showMonthMenu = ref(false);
 
+const setYearFilter = (year) => {
+    selectedYear.value = year;
+    showYearMenu.value = false;
+};
+
+const clearYearFilter = () => {
+    selectedYear.value = null;
+    showYearMenu.value = false;
+};
+
+const setMonthFilter = (index) => {
+    selectedMonth.value = index;
+    showMonthMenu.value = false;
+};
+
+const clearMonthFilter = () => {
+    selectedMonth.value = null;
+    showMonthMenu.value = false;
+};
 // Define table headers
 const headers = [
     { title: "Ticket ID", value: "ticket_id" },
@@ -316,7 +497,6 @@ const fetchTickets = async () => {
             ...ticket,
             // Access the violator_id from the nested structure
             offense_count: ticket.violator_id ? violationCounts[ticket.violator_id.violator_id] || 0 : 0
-
         }));
     } catch (error) {
         console.error("Error fetching tickets:", error);
@@ -333,7 +513,7 @@ const filteredTickets = computed(() => {
                 day: 'numeric',
                 year: 'numeric'
             });
-            const formattedTime = dateObj.toLocaleTimeString('en-US', {
+            const formattedTime = dateObj.toLocaleTimeString('en-US', { 
                 hour: 'numeric',
                 minute: '2-digit',
                 hour12: true
@@ -343,7 +523,7 @@ const filteredTickets = computed(() => {
                 violation.violation_violation_id.violation
             ).join(', ');
             const offense_level = ticket.violation_id.map(offense => 
-                offense.violation_violation_id.level_of_offense
+                offense .violation_violation_id.level_of_offense
             ).join(', ');
 
             const user = ticket.user_created ? ticket.user_created.first_name : "N/A";
@@ -365,7 +545,9 @@ const filteredTickets = computed(() => {
             (!searchQuery.value || 
                 `${ticket.violator_first_name} ${ticket.violator_middle_name} ${ticket.violator_last_name}`
                 .toLowerCase()
-                .includes(searchQuery.value.toLowerCase()))
+                .includes(searchQuery.value.toLowerCase())) &&
+            (!selectedYear.value || new Date(ticket.date_time).getFullYear() === selectedYear.value) &&
+            (selectedMonth.value === null || new Date(ticket.date_time).getMonth() === selectedMonth.value)
         );
 });
 
@@ -510,5 +692,23 @@ const confirmDelete = async () => {
 .v-card__text {
     max-height: 70vh;
     overflow-y: auto;
+}
+.status-chip {
+font-size: 16px;
+height: 48px;
+opacity: 100% !important;
+}
+
+.status-select {
+width: 100%;
+color: #0F3C45 !important;
+}
+
+.status-select .v-input__slot {
+
+}
+
+.status-select .v-select__selection {
+    color: #0F3C45 !important;
 }
 </style>
