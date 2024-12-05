@@ -34,7 +34,7 @@
             </v-col>
           </v-row>
     
-          <v-btn color="primary" @click="downloadReport">Download Report</v-btn>
+
     
           <v-data-table
             :headers="reportHeaders"
@@ -42,6 +42,7 @@
             density="compact"
             class="elevation-1 mt-4"
           ></v-data-table>
+          <v-btn color="green" @click="downloadReport">Download Report</v-btn>
         </v-col>
       </v-row>
     </v-container>
@@ -81,10 +82,10 @@
   });
     
   const reportHeaders = [
-    { text: "Citation Officer", value: "officer" },
-    { text: "Total Tickets Issued", value: "totalTickets" },
-    { text: "Paid Tickets", value: "paidTickets" },
-    { text: "Not Paid Tickets", value: "notPaidTickets" },
+    { title: "Citation Officer", value: "officer" },
+    { title: "Total Tickets Issued", value: "totalTickets" },
+    { title: "Paid Tickets", value: "paidTickets" },
+    { title: "Not Paid Tickets", value: "notPaidTickets" },
   ];
     
   // Fetch tickets from Directus

@@ -53,7 +53,7 @@
             </v-data-table>
           </v-card>
         </v-col>
-        <v-btn @click="downloadExcel" color="success" class="ml-2">Download Excel</v-btn>
+        <v-btn @click="downloadExcel" color="success" class="ml-2">Download Report</v-btn>
       </v-row>
     </v-container>
   </template>
