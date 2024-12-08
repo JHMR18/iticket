@@ -26,7 +26,7 @@
               <v-select
                 v-model="selectedYear"
                 :items="years"
-                item-text="year"
+                item-title="year"
                 item-value="year"
                 label="Select Year"
                 clearable

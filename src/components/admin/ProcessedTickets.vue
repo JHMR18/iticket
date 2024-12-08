@@ -216,8 +216,16 @@
                   </v-col>
                   <v-col cols="6">
                     <v-text-field 
-                      v-model="formData.offense_count" 
+                      v-model="formData.current_offense_count"   
                       label="Number of Offenses" 
+                      readonly 
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="6">
+                    <v-text-field 
+                      v-model="formData.location"   
+                      label="Location" 
                       readonly 
                       dense
                     ></v-text-field>
@@ -393,6 +401,8 @@ const getStatusColor = (status) => {
 const formData = reactive({
     ticket_id: null,
     status: '',
+    location: '',
+    current_offense_count: '',
     date_time: '',
     violator_id: {
         violator_id:'',
@@ -472,32 +482,32 @@ const fetchTickets = async () => {
         const ticketsResponse = await axios.get("http://localhost:8055/items/tickets", {
             headers: { Authorization: `Bearer ${token}` },
             params: {
-                fields: "ticket_id,date_time,violation_id.violation_violation_id.violation,violation_id.violation_violation_id.level_of_offense,user_created.first_name,user_created.last_name,total_penalty_fee,status,violator_id.*,impounded_vehicle_id.*",
+                fields: "ticket_id,location,current_offense_count,date_time,violation_id.violation_violation_id.violation,violation_id.violation_violation_id.level_of_offense,user_created.first_name,user_created.last_name,total_penalty_fee,status,violator_id.*,impounded_vehicle_id.*",
             },
         });
-        
+        tickets.value = ticketsResponse.data.data
         // Fetch number of violations
-        const violationsResponse = await axios.get("http://localhost:8055/items/number_of_violations", {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        // const violationsResponse = await axios.get("http://localhost:8055/items/number_of_violations", {
+        //     headers: { Authorization: `Bearer ${token}` },
+        // });
 
-        // Create a mapping of violator_id to their offense counts
-        const violationCounts = {};
-        violationsResponse.data.data.forEach(violation => {
-            const violatorId = violation.violator_id; // Get violator_id from the response
-            if (violationCounts[violatorId]) {
-                violationCounts[violatorId]++; // Increment count if already exists
-            } else {
-                violationCounts[violatorId] = 1; // Initialize count if not exists
-            }
-        });
+        // // Create a mapping of violator_id to their offense counts
+        // const violationCounts = {};
+        // violationsResponse.data.data.forEach(violation => {
+        //     const violatorId = violation.violator_id; // Get violator_id from the response
+        //     if (violationCounts[violatorId]) {
+        //         violationCounts[violatorId]++; // Increment count if already exists
+        //     } else {
+        //         violationCounts[violatorId] = 1; // Initialize count if not exists
+        //     }
+        // });
 
         // Map tickets and include the offense count
-        tickets.value = ticketsResponse.data.data.map(ticket => ({
-            ...ticket,
-            // Access the violator_id from the nested structure
-            offense_count: ticket.violator_id ? violationCounts[ticket.violator_id.violator_id] || 0 : 0
-        }));
+        // tickets.value = ticketsResponse.data.data.map(ticket => ({
+        //     ...ticket,
+        //     // Access the violator_id from the nested structure
+        //     offense_count: ticket.violator_id ? violationCounts[ticket.violator_id.violator_id] || 0 : 0
+        // }));
     } catch (error) {
         console.error("Error fetching tickets:", error);
     }
