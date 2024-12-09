@@ -230,7 +230,7 @@
                       dense
                     ></v-text-field>
                   </v-col>
-                  <v-col cols="12">
+                  <v-col cols="6">
                     <v-text-field 
                       v-model="formData.date_time" 
                       label="Ticket Issued Date/Time" 
@@ -482,7 +482,7 @@ const fetchTickets = async () => {
         const ticketsResponse = await axios.get("http://localhost:8055/items/tickets", {
             headers: { Authorization: `Bearer ${token}` },
             params: {
-                fields: "ticket_id,location,current_offense_count,date_time,violation_id.violation_violation_id.violation,violation_id.violation_violation_id.level_of_offense,user_created.first_name,user_created.last_name,total_penalty_fee,status,violator_id.*,impounded_vehicle_id.*",
+                fields: "ticket_id,location,current_offense_count,date_time,violation_id.violation_type_id.*.*.*,user_created.first_name,user_created.last_name,total_penalty_fee,status,violator_id.*,impounded_vehicle_id.*",
             },
         });
         tickets.value = ticketsResponse.data.data
@@ -529,12 +529,19 @@ const filteredTickets = computed(() => {
                 hour12: true
             });
 
-            const violations = ticket.violation_id.map(violation => 
-                violation.violation_violation_id.violation
-            ).join(', ');
-            const offense_level = ticket.violation_id.map(offense => 
-                offense .violation_violation_id.level_of_offense
-            ).join(', ');
+            // Safe extraction of violations
+            const violations = ticket.violation_id?.violation_type_id
+                ? ticket.violation_id.violation_type_id.map(violation => 
+                    violation.violation_violation_id?.violation || 'Unknown Violation'
+                ).join(', ')
+                : 'No Violations';
+
+            // Safe extraction of offense levels
+            const offense_level = ticket.violation_id?.violation_type_id
+                ? ticket.violation_id.violation_type_id.map(offense => 
+                    offense.violation_violation_id?.level_of_offense || 'Unknown Level'
+                ).join(', ')
+                : 'No Offense Level';
 
             const user = ticket.user_created ? ticket.user_created.first_name : "N/A";
 
@@ -565,27 +572,59 @@ const openEditModal = (item) => {
     isEditing.value = true;
     formData.ticket_id = item.ticket_id;
     formData.date_time = item.date_time;
-    formData.violator_id = {
-        first_name: item.violator_id.first_name,
-        middle_name: item.violator_id.middle_name,
-        last_name: item.violator_id.last_name,
-        address: item.violator_id.address,
-        birth_date: item.violator_id.birth_date,
-        license_no: item.violator_id.license_no,
-        issued_at: item.violator_id.issued_at
-    };
-    formData.violation_id = item.violation_id; // Keep the original array for potential use
-    formData.violations = item.violation_id.map(violation => violation.violation_violation_id.violation).join(', '); // Format violations
-    formData.total_penalty_fee = item.total_penalty_fee;
-    formData.user_created = {
-        first_name: item.user_created.first_name,
-        last_name: item.user_created.last_name
-    };
-    formData.status = item.status;
+    formData.location = item.location;
+    formData.current_offense_count = item.current_offense_count;
+
+    // Handle violator_id safely
+    formData.violator_id = typeof item.violator_id === 'object' 
+        ? {
+            first_name: item.violator_id?.first_name || '',
+            middle_name: item.violator_id?.middle_name || '',
+            last_name: item.violator_id?.last_name || '',
+            address: item.violator_id?.address || '',
+            birth_date: item.violator_id?.birth_date || '',
+            license_no: item.violator_id?.license_no || '',
+            issued_at: item.violator_id?.issued_at || ''
+        }
+        : {
+            first_name: '',
+            middle_name: '',
+            last_name: '',
+            address: '',
+            birth_date: '',
+            license_no: '',
+            issued_at: ''
+        };
+
+    // Handle violation_id safely
+    formData.violation_id = item.violation_id || [];
+    
+    // Format violations safely
+    formData.violations = item.violation_id?.violation_type_id
+        ? item.violation_id.violation_type_id.map(violation => 
+            violation.violation_violation_id?.violation || 'Unknown Violation'
+        ).join(', ')
+        : '';
+
+    formData.total_penalty_fee = item.total_penalty_fee || '';
+    
+    // Handle user_created safely
+    formData.user_created = item.user_created 
+        ? {
+            first_name: item.user_created.first_name || '',
+            last_name: item.user_created.last_name || ''
+        }
+        : {
+            first_name: '',
+            last_name: ''
+        };
+
+    formData.status = item.status || '';
     formData.impounded_vehicle_id = item.impounded_vehicle_id || {}; 
-    formData.offense_count = item.offense_count; // Assign the offense count
+    formData.offense_count = item.offense_count || ''; 
     isModalOpen.value = true;
 };
+
 const closeModal = () => {
     isModalOpen.value = false;
     Object.assign(formData, {
@@ -601,7 +640,8 @@ const closeModal = () => {
             license_no: '',
             issued_at: ''
         },
-        violation_id: '',
+        violation_id: [],
+        violations: '',
         total_penalty_fee: '',
         offense_status: '',
         user_created: {

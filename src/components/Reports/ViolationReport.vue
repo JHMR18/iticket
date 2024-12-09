@@ -99,29 +99,57 @@
   
   const fetchReport = async () => {
     try {
-      const response = await axios.get("http://localhost:8055/items/tickets", {
-   headers: { Authorization: `Bearer ${token}` },
-        params: {
-          fields: "ticket_id,violator_id.first_name,violator_id.middle_name,violator_id.last_name,violation_id.violation_violation_id.violation,date_time,user_created.first_name,user_created.last_name,total_penalty_fee,status",
-        },
-      });
-  
-      violationReport.value = response.data.data.map(ticket => ({
-        ticket_id: ticket.ticket_id,
-        first_name: ticket.violator_id.first_name,
-        middle_name: ticket.violator_id.middle_name,
-        last_name: ticket.violator_id.last_name,
-        violation: ticket.violation_id.map(v => v.violation_violation_id.violation).join(', '),
-        date_issued: new Date(ticket.date_time).toLocaleString(),
-        citation_officer: `${ticket.user_created.first_name} ${ticket.user_created.last_name}`,
-        penalty_fee: ticket.total_penalty_fee,
-        ticket_status: ticket.status,
-      }));
+        const response = await axios.get("http://localhost:8055/items/tickets", {
+            headers: { Authorization: `Bearer ${token}` },
+            params: {
+                fields: "ticket_id,violator_id.first_name,violator_id.middle_name,violator_id.last_name,violation_id.violation_type_id.violation_violation_id.violation,date_time,user_created.first_name,user_created.last_name,total_penalty_fee,status",
+            },
+        });
+
+        violationReport.value = response.data.data.map(ticket => {
+            // Safe extraction of violations
+            const violations = ticket.violation_id?.violation_type_id
+                ? ticket.violation_id.violation_type_id.map(v => 
+                    v.violation_violation_id?.violation || 'Unknown Violation'
+                ).join(', ')
+                : 'No Violations';
+
+            // Safe extraction of violator information
+            const first_name = typeof ticket.violator_id === 'object' 
+                ? ticket.violator_id?.first_name || 'N/A' 
+                : 'N/A';
+            const middle_name = typeof ticket.violator_id === 'object' 
+                ? ticket.violator_id?.middle_name || '' 
+                : '';
+            const last_name = typeof ticket.violator_id === 'object' 
+                ? ticket.violator_id?.last_name || 'N/A' 
+                : 'N/A';
+
+            // Safe extraction of user created information
+            const citation_officer = ticket.user_created
+                ? `${ticket.user_created.first_name || ''} ${ticket.user_created.last_name || ''}`.trim()
+                : 'N/A';
+
+            return {
+                ticket_id: ticket.ticket_id || 'N/A',
+                first_name,
+                middle_name,
+                last_name,
+                violation: violations,
+                date_issued: ticket.date_time 
+                    ? new Date(ticket.date_time).toLocaleString() 
+                    : 'N/A',
+                citation_officer,
+                penalty_fee: ticket.total_penalty_fee || 'N/A',
+                ticket_status: ticket.status || 'N/A',
+            };
+        });
     } catch (error) {
-      console.error("Error fetching violation report:", error);
+        console.error("Error fetching violation report:", error);
+        // Optionally set violationReport to an empty array or handle the error state
+        violationReport.value = [];
     }
-  };
-  
+};
   const filteredViolationReport = computed(() => {
     return violationReport.value.filter(ticket => {
       const ticketDate = new Date(ticket.date_issued);
