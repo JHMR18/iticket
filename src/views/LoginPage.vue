@@ -93,8 +93,8 @@ const login = async () => {
             email: email.value,
             password: password.value,
         });
-        token.value = response.data.data.access_token;
-        // token.value = 'jjKiZMJruxfivqpPLUTJlA8gcP-WYpqw'
+        // token.value = response.data.data.access_token;
+        token.value = 'jjKiZMJruxfivqpPLUTJlA8gcP-WYpqw'
         localStorage.setItem('auth-token', token.value);
         loginError.value = false; // Reset error status on successful login
         router.push('/admin/processed-tickets');
@@ -104,26 +104,7 @@ const login = async () => {
     }
 };
 
-const fetchUserTitle = async () => {
-    try {
-        const storedToken = token.value;
-        if (storedToken) {
-            const response = await axios.get(`${apiUrl}/users/me?fields=role.name`, {
-                headers: { Authorization: `Bearer ${storedToken}` },
-            });
-            userRole.value = response.data.data.role.name;
-            if (userRole.value === 'Administrator') {
-                router.push('/admin/processed-tickets');
-            } else if (userRole.value === 'treasurer') {
-                router.push('/treasurer/tickets');
-            }
-        } else {
-            console.error('Token not found');
-        }
-    } catch (error) {
-        console.error('Fetch user title error:', error.response?.data?.errors || error);
-    }
-};
+
 
 onMounted(() => {
     localStorage.removeItem('auth-token');

@@ -1,8 +1,30 @@
 <template>
     <div>
+        <!-- Search and Filter Section -->
+        <v-row class="mb-4" style="margin-top: 20px; padding-left: 20px;">
+            <v-col cols="12" sm="6" md="4">
+                <v-text-field
+                    v-model="searchQuery"
+                    label="Search Violations"
+                    prepend-inner-icon="mdi-magnify"
+                    variant="outlined"
+                    clearable
+                ></v-text-field>
+            </v-col>
+            <v-col cols="12" sm="6" md="4">
+                <v-select
+                    v-model="offenseLevelFilter"
+                    :items="offenseLevels"
+                    label="Filter by Offense Level"
+                    variant="outlined"
+                    clearable
+                ></v-select>
+            </v-col>
+        </v-row>
+
         <!-- Vuetify Data Table -->
         <v-data-table
-            :items="violations"
+            :items="filteredViolations"
             :headers="headers"
             item-key="id"
             class="elevation-1"
@@ -61,7 +83,7 @@
 
 <script setup>
 import axios from "axios";
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, onMounted, computed } from "vue";
 
 const token = localStorage.getItem("auth-token");
 const violations = ref([]);
@@ -69,6 +91,12 @@ const isModalOpen = ref(false);
 const isEditing = ref(false);
 const isDeleteConfirmationOpen = ref(false);
 const violationToDelete = ref(null);
+const searchQuery = ref('');
+const offenseLevelFilter = ref(null);
+
+// Offense levels for dropdown
+const offenseLevels = ['Grave', 'Less Grave', 'Minor'];
+
 const formData = reactive({
     violation_id: null,
     violation: '',
@@ -87,6 +115,19 @@ const headers = [
     { title: "Third Offense Fee", value: "to_penalty_fee" },
     { title: "Actions", value: "actions", sortable: false },
 ];
+
+// Computed property for filtered violations
+const filteredViolations = computed(() => {
+    return violations.value.filter(violation => {
+        const matchesSearch = !searchQuery.value || 
+            violation.violation.toLowerCase().includes(searchQuery.value.toLowerCase());
+        
+        const matchesFilter = !offenseLevelFilter.value || 
+            violation.level_of_offense === offenseLevelFilter.value;
+        
+        return matchesSearch && matchesFilter;
+    });
+});
 
 onMounted(() => {
     fetchViolations();

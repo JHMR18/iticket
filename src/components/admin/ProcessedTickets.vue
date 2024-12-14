@@ -13,6 +13,9 @@
             <ticket-line-chart></ticket-line-chart>
             </v-col>
         </v-row>
+        <v-col>
+            <bar-chart-violation></bar-chart-violation>
+        </v-col>
         <!-- Compact Filters -->
         <v-row dense class="mb-4">
             <v-col cols="12" sm="3">
@@ -52,13 +55,13 @@
                 <v-select 
                     v-model="selectedMonth" 
                     :items="months" 
-                    item-title="title" 
+                    item-title="title"  
                     item-value="value"
                     label="Month" 
                     variant="outlined" 
                     dense
                     clearable
-                ></v-select>
+                ></v-select>  
                 </v-col>
             </v-row>
             </v-col>
@@ -95,6 +98,16 @@
           >
             Ticket ID: {{ formData.ticket_id }}
           </v-chip>
+
+          <v-chip 
+            v-if="formData.or_number"
+            class="mr-4" 
+            color="#0F3C45" 
+            text-color="white" 
+            label
+          >
+            OR No: {{ formData.or_number }}
+          </v-chip>
           
           <div class="d-flex flex-column">
             <span style="font-weight: bold; color:#0F3C45 ;" class="subtitle-2 grey--text">Citation Officer</span>
@@ -125,6 +138,7 @@
         </v-chip>
       </v-card-title>
 
+
       <v-card-text class="pt-0">
         <v-row>
           <v-col cols="12" md="6">
@@ -138,7 +152,7 @@
                     <v-text-field 
                       v-model="formData.violator_id.first_name"
                       label="First Name" 
-                      readonly 
+                     
                       dense
                     ></v-text-field>
                   </v-col>
@@ -146,7 +160,7 @@
                     <v-text-field 
                       v-model="formData.violator_id.middle_name"
                       label="Middle Name" 
-                      readonly 
+                     
                       dense
                     ></v-text-field>
                   </v-col>
@@ -154,7 +168,7 @@
                     <v-text-field 
                       v-model="formData.violator_id.last_name"
                       label="Last Name" 
-                      readonly 
+                    
                       dense
                     ></v-text-field>
                   </v-col>
@@ -162,7 +176,7 @@
                     <v-text-field 
                       v-model="formData.violator_id.license_no"
                       label="License No." 
-                      readonly 
+                     
                       dense
                     ></v-text-field>
                   </v-col>
@@ -170,7 +184,7 @@
                     <v-text-field 
                       v-model="formData.violator_id.birth_date"
                       label="Birth Date" 
-                      readonly 
+                     
                       dense
                     ></v-text-field>
                   </v-col>
@@ -178,7 +192,7 @@
                     <v-text-field 
                       v-model="formData.violator_id.address"
                       label="Address" 
-                      readonly 
+                     
                       dense
                     ></v-text-field>
                   </v-col>
@@ -210,7 +224,7 @@
                     <v-text-field 
                       v-model="formData.total_penalty_fee" 
                       label="Total Penalty Fee" 
-                      readonly 
+                      
                       dense
                     ></v-text-field>
                   </v-col>
@@ -218,7 +232,7 @@
                     <v-text-field 
                       v-model="formData.current_offense_count"   
                       label="Number of Offenses" 
-                      readonly 
+                  
                       dense
                     ></v-text-field>
                   </v-col>
@@ -226,7 +240,7 @@
                     <v-text-field 
                       v-model="formData.location"   
                       label="Location" 
-                      readonly 
+                     
                       dense
                     ></v-text-field>
                   </v-col>
@@ -354,6 +368,7 @@ import axios from "axios";
 import { ref, reactive, computed, onMounted } from "vue";
 import PieChart from "./charts/PieChart.vue";
 import TicketLineChart from "./charts/TicketLineChart.vue";
+import BarChartViolation from "./charts/BarChartViolation.vue";
 const token = localStorage.getItem("auth-token");
 const tickets = ref([]);
 const isModalOpen = ref(false);
@@ -402,6 +417,7 @@ const formData = reactive({
     ticket_id: null,
     status: '',
     location: '',
+    or_number: '',
     current_offense_count: '',
     date_time: '',
     violator_id: {
@@ -482,7 +498,7 @@ const fetchTickets = async () => {
         const ticketsResponse = await axios.get("http://localhost:8055/items/tickets", {
             headers: { Authorization: `Bearer ${token}` },
             params: {
-                fields: "ticket_id,location,current_offense_count,date_time,violation_id.violation_type_id.*.*.*,user_created.first_name,user_created.last_name,total_penalty_fee,status,violator_id.*,impounded_vehicle_id.*",
+                fields: "ticket_id,location,current_offense_count,or_number,date_time,violation_id.violation_type_id.*.*.*,user_created.first_name,user_created.last_name,total_penalty_fee,status,violator_id.*,impounded_vehicle_id.*",
             },
         });
         tickets.value = ticketsResponse.data.data
@@ -573,6 +589,7 @@ const openEditModal = (item) => {
     formData.ticket_id = item.ticket_id;
     formData.date_time = item.date_time;
     formData.location = item.location;
+    formData.or_number = item.or_number;
     formData.current_offense_count = item.current_offense_count;
 
     // Handle violator_id safely
@@ -658,6 +675,18 @@ const saveTicket = async () => {
             // Prepare the data to be sent for the update
             const updateData = {
                 status: formData.status,
+                total_penalty_fee: formData.total_penalty_fee,
+                current_offense_count: formData.current_offense_count,
+                location: formData.location,
+                violator_id: {
+                    first_name: formData.violator_id.first_name,
+                    middle_name: formData.violator_id.middle_name,
+                    last_name: formData.violator_id.last_name,
+                    address: formData.violator_id.address,
+                    birth_date: formData.violator_id.birth_date,
+                    license_no: formData.violator_id.license_no,
+                    issued_at: formData.violator_id.address,
+                }
             };
 
             // Send the update request
