@@ -130,11 +130,6 @@ const newPassword = ref('');
 const confirmPassword = ref('');
 const searchQuery = ref('');
 
-const ENFORCER_ROLE_ID = 'bfc39d2e-772b-44e7-95a2-124670bc47a1';
-
-const roleMapping = {
-    [ENFORCER_ROLE_ID]: 'enforcer'
-};
 
 const api = axios.create({
     baseURL: 'http://localhost:8055',
@@ -178,10 +173,10 @@ const availableRoles = [
 ];
 
 onMounted(async () => {
-    await fetchEnforcers();
+    await fetchPatients();
 });
 
-const fetchEnforcers = async () => {
+const fetchPatients = async () => {
     try {
         const response = await api.get("/users", {
             params: {
@@ -227,7 +222,7 @@ const saveEnforcer = async () => {
         }
 
         await api.patch(`/users/${selectedEnforcer.value.id}`, updateData);
-        await fetchEnforcers();
+        await fetchPatients();
         closeEditModal();
     } catch (error) {
         console.error("Error saving enforcer:", error.response?.data || error);
@@ -247,7 +242,7 @@ const closeDeleteConfirmation = () => {
 const confirmDelete = async () => {
     try {
         await api.delete(`/users/${enforcerToDelete.value}`);
-        await fetchEnforcers();
+        await fetchPatients();
         closeDeleteConfirmation();
     } catch (error) {
         console.error("Error deleting enforcer:", error.response?.data || error);
@@ -273,7 +268,7 @@ const addUser = async () => {
             role,
             password
         });
-        await fetchEnforcers();
+        await fetchPatients();
         closeAddUserModal();
     } catch (error) {
         console.error("Error adding user:", error.response?.data || error);
