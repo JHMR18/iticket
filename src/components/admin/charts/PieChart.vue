@@ -65,7 +65,7 @@ Chart.register(ChartDataLabels);
 const token = localStorage.getItem('auth-token');
 const chart = ref(null);
 const menu = ref(false);  // Controls the visibility of the filter menu
-const currentYear = new Date().getFullYear(); // Get the current year
+const currentYear = 2024; // Get the current year
 const selectedYear = ref(currentYear); // Holds the selected year for filtering, initialized with the current year
 const years = ref([2021, 2022, 2023, currentYear]); // Sample years including the current year
 const chartInstance = ref(null);

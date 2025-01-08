@@ -56,7 +56,7 @@ Chart.register(...registerables, ChartDataLabels);
 const chartEndpoint = 'http://localhost:8055/items/tickets'; // Adjust this endpoint as needed
 const chart = ref(null);
 const menu = ref(false);
-const selectedYear = ref(new Date().getFullYear()); // Default to the current year
+const selectedYear = ref(2024); // Default to the current year
 const years = ref([2023, 2024]); // Adjust this as needed
 const chartInstance = ref(null);
 const token = localStorage.getItem('auth-token');

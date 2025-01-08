@@ -129,7 +129,7 @@ const newUser = ref({ first_name: '', last_name: '', email: '', role: '', passwo
 const newPassword = ref('');
 const confirmPassword = ref('');
 const searchQuery = ref('');
-
+const ENFORCER_ROLE_ID = 'bfc39d2e-772b-44e7-95a2-124670bc47a1';
 
 const api = axios.create({
     baseURL: 'http://localhost:8055',
@@ -167,6 +167,9 @@ const filteredEnforcers = computed(() => {
             displayRole: roleMapping[enforcer.role] || enforcer.role
         }));
 });
+const roleMapping = {
+    'bfc39d2e-772b-44e7-95a2-124670bc47a1': 'enforcer' 
+};
 
 const availableRoles = [
     { id: ENFORCER_ROLE_ID, name: 'enforcer' }

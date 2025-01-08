@@ -94,7 +94,7 @@ const login = async () => {
             password: password.value,
         });
         // token.value = response.data.data.access_token;
-        token.value = 'jjKiZMJruxfivqpPLUTJlA8gcP-WYpqw'
+        token.value = 'CnZ3PCj6yMaaFle6h31QAezyV0cY7I_3'
         localStorage.setItem('auth-token', token.value);
         loginError.value = false; // Reset error status on successful login
         router.push('/admin/processed-tickets');
